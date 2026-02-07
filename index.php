@@ -49,6 +49,10 @@
         <input id="date" type="date" value="<?php echo date('Y-m-d'); ?>">
       </div>
       <div>
+        <label>Buscar</label>
+        <input id="search" placeholder="código, nombre, depto, acción, nota">
+      </div>
+      <div>
         <button id="btnReload">Cargar</button>
       </div>
     </div>
@@ -75,8 +79,11 @@
 
     async function loadLogs() {
       const date = $("date").value;
-      const data = await api(`api/access.php?date=${encodeURIComponent(date)}`);
+      const q = $("search").value.trim();
+
+      const data = await api(`api/access.php?date=${encodeURIComponent(date)}&q=${encodeURIComponent(q)}`);
       const rows = data.logs || [];
+
       $("tbody").innerHTML = rows.map(r => `
         <tr>
           <td>${esc(r.occurred_at)}</td>
@@ -90,6 +97,8 @@
     }
 
     $("btnReload").addEventListener("click", () => loadLogs().catch(showErr));
+    $("search").addEventListener("keyup", () => loadLogs().catch(showErr));
+    $("date").addEventListener("change", () => loadLogs().catch(showErr));
 
     $("btnMark").addEventListener("click", async () => {
       $("msg").textContent = "";

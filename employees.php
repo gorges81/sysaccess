@@ -77,6 +77,7 @@
   </table>
 
   <script src="assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     const $ = (id) => document.getElementById(id);
 
@@ -101,6 +102,7 @@
       const q = $("q").value.trim();
       const data = await api(`api/employees.php?q=${encodeURIComponent(q)}`);
       const rows = data.employees || [];
+
       $("tbody").innerHTML = rows.map(r => `
         <tr>
           <td>${esc(r.id)}</td>
@@ -115,7 +117,6 @@
         </tr>
       `).join("");
 
-      // acciones
       rows.forEach(r => {
         const btnE = document.querySelector(`button[data-edit="${r.id}"]`);
         const btnD = document.querySelector(`button[data-del="${r.id}"]`);
@@ -125,10 +126,25 @@
     }
 
     async function delEmp(id) {
-      if (!confirm("¿Eliminar empleado? También borra sus registros de acceso.")) return;
+      const result = await Swal.fire({
+        title: "¿Eliminar empleado?",
+        text: "Se eliminarán también sus registros de acceso",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      });
+
+      if (!result.isConfirmed) return;
+
       await api("api/employees.php", { method: "DELETE", body: JSON.stringify({ id }) });
+
       await loadEmployees();
       clearForm();
+
+      Swal.fire("Eliminado", "El empleado fue eliminado", "success");
     }
 
     function showErr(e) {

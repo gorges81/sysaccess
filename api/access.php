@@ -16,18 +16,43 @@ function action_label(string $a): string {
 
 if ($method === "GET") {
   $date = $_GET["date"] ?? date("Y-m-d"); // YYYY-MM-DD
-  $sql = "
-    SELECT l.id, l.action, l.occurred_at, l.note,
-           e.code, e.full_name, d.name AS department
-    FROM access_logs l
-    JOIN employees e ON e.id = l.employee_id
-    JOIN departments d ON d.id = e.department_id
-    WHERE DATE(l.occurred_at) = ?
-    ORDER BY l.occurred_at DESC
-    LIMIT 300
-  ";
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param("s", $date);
+  $q = trim($_GET["q"] ?? "");            // buscador general
+
+  if ($q === "") {
+    $sql = "
+      SELECT l.id, l.action, l.occurred_at, l.note,
+             e.code, e.full_name, d.name AS department
+      FROM access_logs l
+      JOIN employees e ON e.id = l.employee_id
+      JOIN departments d ON d.id = e.department_id
+      WHERE DATE(l.occurred_at) = ?
+      ORDER BY l.occurred_at DESC
+      LIMIT 300
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $date);
+  } else {
+    $sql = "
+      SELECT l.id, l.action, l.occurred_at, l.note,
+             e.code, e.full_name, d.name AS department
+      FROM access_logs l
+      JOIN employees e ON e.id = l.employee_id
+      JOIN departments d ON d.id = e.department_id
+      WHERE DATE(l.occurred_at) = ?
+        AND (
+          e.code LIKE CONCAT('%', ?, '%')
+          OR e.full_name LIKE CONCAT('%', ?, '%')
+          OR d.name LIKE CONCAT('%', ?, '%')
+          OR l.action LIKE CONCAT('%', ?, '%')
+          OR l.note LIKE CONCAT('%', ?, '%')
+        )
+      ORDER BY l.occurred_at DESC
+      LIMIT 300
+    ";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sssss", $date, $q, $q, $q, $q);
+  }
+
   $stmt->execute();
   $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
@@ -48,7 +73,6 @@ if ($method === "POST") {
     json_out(["ok" => false, "error" => "Código o acción inválida"], 400);
   }
 
-  // Buscar empleado activo por código
   $stmt = $conn->prepare("SELECT id, is_active FROM employees WHERE code=? LIMIT 1");
   $stmt->bind_param("s", $code);
   $stmt->execute();
