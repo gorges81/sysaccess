@@ -1,0 +1,10 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs/temp
+*.log
+
+# (Opcional) si luego guardas configs locales
+config/local.php
